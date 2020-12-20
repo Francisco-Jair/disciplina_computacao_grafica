@@ -1,0 +1,8 @@
+#ifndef BIBLIOTECA_PAINT_H
+#define BIBLIOTECA_PAINT_H
+
+
+void algoritmoDeBresenham(int x1, int y1, int x2, int y2);
+
+
+#endif

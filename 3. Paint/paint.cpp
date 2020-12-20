@@ -7,6 +7,11 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <math.h>
+#include <stdlib.h>
+
+
+
 
 // Variaveis Globais
 bool click1 = false, click2 = false;
@@ -67,6 +72,10 @@ void mouse(int button, int state, int x, int y);
 void retaImediata(double x1, double y1, double x2, double y2);
 //Função que implementa o Algoritmo de Bresenham
 void algoritmoDeBresenham(int x1, int y1, int x2, int y2);
+
+////Função que implementa o Algoritmo de Bresenham Com redução ao primeiro octante
+void algoritmoDeBresenhamReducao1Octante(int x1, int y1, int x2, int y2);
+
 // Funcao que percorre a lista de pontos desenhando-os na tela
 void drawPontos();
 
@@ -178,7 +187,8 @@ void display(void)
 	if(click1 && click2)
 	{
 		// retaImediata(x_1, y_1, x_2, y_2);
-		algoritmoDeBresenham(x_1, y_1, x_2, y_2);
+		//algoritmoDeBresenham(x_1, y_1, x_2, y_2);
+		algoritmoDeBresenhamReducao1Octante(x_1, y_1, x_2, y_2);
 		drawPontos();
 		click1 = false;
 		click2 = false;
@@ -256,7 +266,6 @@ void algoritmoDeBresenham(int x1, int y1, int x2, int y2)
 {
 	int deltaX, deltaY, d, incE, incNE, x, y, dIni = 0, cont = 0;
 
-	printf("OK");
 	//Armazenando os extremos para desenho
 	pontos = pushPonto((int)x1, (int)y1);
 	pontos = pushPonto((int)x2, (int)y2);
@@ -297,15 +306,136 @@ void algoritmoDeBresenham(int x1, int y1, int x2, int y2)
 	}
 }
 
+void algoritmoDeBresenhamReducao1Octante(int x1, int y1, int x2, int y2)
+{
+
+	int deltaX, deltaY, d, incE, incNE, x, y, dIni = 0, cont = 0, Xaux, Yaux;
+	bool S = false, D = false;
+	//São necessario 3 passos
+
+	// 1ª -> Transformar os segmentos de retas com declive negativo em positivo
+	//Negativo: 90 < alfa < 180   Postivo: 0 < alfa < 90 Nulo: alfa = 0
+
+	//2ª -> Trocar os declives superio a 1 em declives menores do que 1
+	// Só trocar o segmento de cada ponto; se deltaX < deltay então m = deltaY/deltaX > 1
+	// se deltaX > deltaY, m fica entre [0;1]
+
+	//3ª -> Troco os extremos, ordenando eles pelo maior
+	//Transformação inversa
+
+
+	deltaX = x2 - x1;
+	deltaY = y2 - y1;
 
 
 
+	//Verificando o Simetrico
+	if((deltaX * deltaY) < 0)
+	{
+		y1 = y1 * (-1);
+		y2 = y2 * (-1);
+
+		S = true;
+
+		deltaX = x2 - x1;
+		deltaY = y2 - y1;
+
+	}
+
+	//Verificando se o angulo e maior que 45 graus -> Declive
+	if(abs(deltaX) < abs(deltaY))
+	{
+		int aux;
+		//pontos A
+		aux = x1;
+		x1 = y1;
+		y1 = aux;
+
+		//Ponto B
+		aux = x2;
+		x2 = y2;
+		y2 = aux;
+
+		//Calculo delta
+		deltaX = x2 - x1;
+		deltaY = y2 - y1;
+
+		D = true;
+	}
+
+	//Ordenado os valores de x
+	if(x1 > x2)
+	{
+		int aux;
+
+		//Trocando pontos de x;
+		aux = x1;
+		x1 = x2;
+		x2 = aux;
+
+		//trocando pontos de y
+		aux = y1;
+		y1 = y2;
+		y2 = aux;
+
+		deltaX = x2 - x1;
+		deltaY = y2 - y1;
+	}
 
 
+	//Aplicando o algoritmo de Bresenham
+	pontos = pushPonto((int)x1, (int)y1);
+	pontos = pushPonto((int)x2, (int)y2);
 
 
+	d = (2 * deltaY) - deltaX;
+	incE = 2 * deltaY;
+	incNE = 2 * (deltaY - deltaX);
+
+	x = x1;
+	y = y1;
+
+	while(x < x2)
+	{
+		if(dIni <= 0)
+		{
+			if(cont != 1)
+			{
+				dIni = d;
+				cont++;
+			}
+			else
+			{
+				dIni += incE;
+			}
+		}
+		else
+		{
+			dIni += incNE;
+			y += 1;
+		}
+
+		if(D)
+		{
+			Xaux = y;
+			Yaux = x;
+		}
+		else
+		{
+			Xaux = x;
+			Yaux = y;
+		}
+
+		if(S)
+		{
+			Yaux = Yaux * (-1);
+		}
 
 
+		x += 1;
+		pontos = pushPonto(Xaux, Yaux);
+	}
+}
 
 
 
