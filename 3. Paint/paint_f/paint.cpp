@@ -15,6 +15,8 @@
 
 // Variaveis Globais
 bool click1 = false, click2 = false;
+bool quadrilatero_ = false;
+
 
 double x_1, y_1, x_2, y_2;
 
@@ -62,6 +64,7 @@ ponto * popPonto()
 }
 
 // Declaracoes forward das funcoes utilizadas
+void GerenciaMouse(int button, int state, int x, int y);
 void init(void);
 void reshape(int w, int h);
 void display(void);
@@ -79,6 +82,10 @@ void algoritmoDeBresenhamReducao1Octante(int x1, int y1, int x2, int y2);
 // Funcao que percorre a lista de pontos desenhando-os na tela
 void drawPontos();
 
+//Função para criar quadrilateros
+void quadrilateros(int x1, int y1, int x2, int y2);
+
+
 // Funcao Principal do C
 int main(int argc, char** argv)
 {
@@ -86,7 +93,8 @@ int main(int argc, char** argv)
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB); // Selecao do Modo do Display e do Sistema de cor utilizado
 	glutInitWindowSize (width, height);  // Tamanho da janela do OpenGL
 	glutInitWindowPosition (100, 100); //Posicao inicial da janela do OpenGL
-	glutCreateWindow ("Rasterizacao"); // Da nome para uma janela OpenGL
+	glutCreateWindow ("Paint"); // Da nome para uma janela OpenGL
+	//glutMouseFunc(GerenciaMouse);
 	init(); // Chama funcao init();
 	glutReshapeFunc(reshape); //funcao callback para redesenhar a tela
 	glutKeyboardFunc(keyboard); //funcao callback do teclado
@@ -95,6 +103,73 @@ int main(int argc, char** argv)
 	glutMainLoop(); // executa o loop do OpenGL
 	return 0; // retorna 0 para o tipo inteiro da funcao main();
 }
+
+void MenuPrincipal(int op)
+{
+}
+
+
+void Figuras(int op)
+{
+	printf("%d\n", op);
+	int r, g, b;
+	switch(op)
+	{
+	case 0:
+
+		break;
+	case 1:
+		r = 0.0f;
+		g = 1.0f;
+		b = 0.0f;
+		break;
+	case 2:
+		r = 0.0f;
+		g = 0.0f;
+		b = 1.0f;
+		break;
+	}
+
+	glutPostRedisplay();
+}
+
+void limparTela(int op)
+{
+
+	switch(op)
+	{
+	case 0:
+		init();
+		break;
+	default:
+		break;
+	}
+
+
+	glutPostRedisplay();
+}
+
+// Criacao do Menu
+void CriaMenu(int button, int state, int x, int y)
+{
+	int menu, submenu1, submenu2;
+
+	submenu1 = glutCreateMenu(Figuras);
+	glutAddMenuEntry("Quadrilateros", 0);
+	// glutAddMenuEntry("Verde", 1);
+	// glutAddMenuEntry("Azul", 2);
+
+	submenu2 = glutCreateMenu(limparTela);
+	glutAddMenuEntry("Limpar", 0);
+
+	menu = glutCreateMenu(MenuPrincipal);
+	glutAddSubMenu("Cor", submenu1);
+	glutAddSubMenu("Limpar tela", submenu2);
+
+
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+}
+
 
 // Funcao com alguns comandos para a inicializacao do OpenGL;
 void init(void)
@@ -157,6 +232,25 @@ void mouse(int button, int state, int x, int y)
 				printf("x1y1(%.0f,%.0f)\n", x_1, y_1);
 			}
 		}
+		break;
+	case GLUT_RIGHT_BUTTON:
+		if (state == GLUT_DOWN)
+		{
+			// CriaMenu(button, state, x, y);
+			int menu, submenu1, submenu2;
+
+			submenu1 = glutCreateMenu(Figuras);
+			glutAddMenuEntry("Quadrilateros", 0);
+
+
+			menu = glutCreateMenu(MenuPrincipal);
+			glutAddSubMenu("Cor", submenu1);
+			glutAddSubMenu("Limpar tela", submenu2);
+
+			glutAttachMenu(GLUT_RIGHT_BUTTON);
+		}
+
+
 		break;
 		/*
 		      case GLUT_MIDDLE_BUTTON:
@@ -437,7 +531,11 @@ void algoritmoDeBresenhamReducao1Octante(int x1, int y1, int x2, int y2)
 	}
 }
 
+void quadrilateros(int x1, int y1, int x2, int y2)
+{
 
+
+}
 
 
 

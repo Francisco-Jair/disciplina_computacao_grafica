@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-	<Libs Value="-static -lglut32 -lglu32 -lopengl32 -lwinmm -lgdi32"/>
+	<VersionInfo>
+		<VersionNumbers Major="1" Minor="0" Release="0" Build="0"/>
+		<LanguageID Value="1046"/>
+		<CharsetID Value="1252"/>
+		<CompanyName Value=""/>
+		<FileVersion Value="1.0.0.0"/>
+		<FileDescription Value="Glut demo"/>
+		<InternalName Value=""/>
+		<LegalCopyright Value=""/>
+		<LegalTrademarks Value=""/>
+		<OriginalFilename Value=""/>
+		<ProductName Value=""/>
+		<ProductVersion Value="1.0.0.0"/>
+		<AutoIncrementBuild Value="No"/>
+	</VersionInfo>
+	<Libs Value="-mwindows -static -lglut32 -lglu32 -lopengl32 -lwinmm -lgdi32"/>
 	<Flags Value="-DGLUT_STATIC"/>
-	<Target Value="Projeto.exe"/>
+	<Target Value="Paint_final.exe"/>
 	<CommandLine Value=""/>
-	<CompilerOptions Value="-Wall -s"/>
+	<CompilerOptions Value="-Wall -s -O2"/>
 	<DeleteObjectsBefore Value="Yes"/>
 	<DeleteObjectsAfter Value="Yes"/>
 	<DeleteMakefileAfter Value="Yes"/>
@@ -12,9 +27,9 @@
 	<EnableTheme Value="Yes"/>
 	<RequiresAdmin Value="No"/>
 	<CompilerType Value="CPP"/>
-	<AppType Value="CONSOLE"/>
+	<AppType Value="GUI"/>
 	<Files>
-		<File Name="letraA.cpp"/>
+		<File Name="main.cpp"/>
 	</Files>
 	<AppIcon>
 		0000010001003030000001002000A82500001600000028000000300000006000
