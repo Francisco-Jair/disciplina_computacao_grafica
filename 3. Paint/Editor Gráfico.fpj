@@ -6,7 +6,7 @@
 		<CharsetID Value="1252"/>
 		<CompanyName Value=""/>
 		<FileVersion Value="1.0.0.0"/>
-		<FileDescription Value="Glut demo"/>
+		<FileDescription Value="Trabalho de computação gráfica"/>
 		<InternalName Value=""/>
 		<LegalCopyright Value=""/>
 		<LegalTrademarks Value=""/>
@@ -17,9 +17,9 @@
 	</VersionInfo>
 	<Libs Value="-mwindows -static -lglut32 -lglu32 -lopengl32 -lwinmm -lgdi32"/>
 	<Flags Value="-DGLUT_STATIC"/>
-	<Target Value="Paint_final.exe"/>
+	<Target Value="Editor Gráfico.exe"/>
 	<CommandLine Value=""/>
-	<CompilerOptions Value="-Wall -s -O2"/>
+	<CompilerOptions Value="-Wall -s"/>
 	<DeleteObjectsBefore Value="Yes"/>
 	<DeleteObjectsAfter Value="Yes"/>
 	<DeleteMakefileAfter Value="Yes"/>

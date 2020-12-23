@@ -1,159 +1,91 @@
-//*********************************************************************
-//  Autor: Francisco Jair
-//*********************************************************************
+/**
+ * TUTORIAL:
+ *
+ * Opcoes no teclado
+ * 0 - DESENHAR RETA
+ * 1 - DESENHAR TRIANGULO
+ * 2 - DESENHAR QUADRILATERO
+ * 3 - RESENHAR POLIGONO
+ * 4 - DESENHAR CIRCUNFERENCIA
+ * 5 - MUDAR COR PARA PRETO
+ * 6 - MUDAR COR PARA VERMELHO
+ * 7 - MUDAR COR PARA VERDE
+ * 8 - MUDAR COR PARA AZUL
+ * 9 - ATIVAR FLOOD FILL
+ * - - LIMPAR TELA
+ * ESC - FECHA PROGRAMA
+ *
+ * Opcoes no mause:
+ * BOTAO ESQUERDO EXECUTA ACAO SELECIONADA
+ *
+ * Observacoes:
+ * 1) Para desenhar eh necessario selecionar a forma desejada, e depois clicar
+ * na tela para desenha-lo. Caso seja uma reta ou quadrilatero eh preciso 2
+ * cliques.
+ * Se for um triangulo, 3 cliques. E se for um poligono, eh possivel desenhar a
+ * partir de 3 cliques e logo depois clique com o botao direito para fechar
+ * o poligono.
+ * 2) Para colorir uma figura, primeiro selecione uma cor e depois selecione a
+ * opcao de flood fill.  Depois basta clicar com o botao esquerdo dentro da
+ * figura e ele ira automaticamente preenche-la. Tem um possivel bug no preenchimento
+ * que acontece quando eh diminuido a largura da linha. Depois de alguns testes
+ * foi fixado com tamanho 3, mas ainda pode ocorrer do floodfill encontrar uma
+ * brecha na figura e desenhar o fundo da tela. Se isso ocorrer ele ficara em loop
+ * desenhando o fundo e nunca vai acabar.
+ *
+ */
 
-// Bibliotecas utilizadas pelo OpenGL
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
-
-// Biblioteca com funcoes matematicas
+#include <vector>
+#include <algorithm>
+#include <iostream>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
-// Variaveis Globais
+#include "structure.h"
+#include "bresenham.h"
+#include "drawQuadrilateral.h"
+#include "drawTriangle.h"
+#include "drawPolygon.h"
+#include "rasterizeCircumference.h"
+#include "floodFill.h"
+#include "menu.h"
 
-int x_0, y_0, x_1, y_1, x_2, y_2;
-
-int shape = 4;
-bool preenchido = false;
-
-//variáveis usadas para calcular primeiro octante
-bool declive = false, simetrico = false;
-
-int width = 512, height = 512; //Largura e altura da janela
-
-// Estrututa de dados para o armazenamento dinamico dos pontos
-// selecionados pelos algoritmos de rasterizacao
-struct ponto
-{
-	int x;
-	int y;
-	ponto * prox;
-};
-
-// Lista encadeada de pontos
-// indica o primeiro elemento da lista
-ponto * pontos = NULL;
-
-// Lista encadeada de pontos clicados
-// indica o primeiro elemento da lista
-ponto * cliques = NULL;
-
-//Conta a quantidade de elementos da lista
-int cliques_cont = 0;
-
-// Funcao para armazenar um ponto de clique na lista
-// Armazena como uma Pilha (empilha)
-ponto * pushClique(int x, int y)
-{
-	ponto * pnt;
-	pnt = new ponto;
-	pnt->x = x;
-	pnt->y = y;
-	pnt->prox = cliques;
-	cliques = pnt;
-	printf("Inserindo pontoClique: (%d, %d)\n", cliques->x, cliques->y);
-	return pnt;
-}
-
-// Funcao para desarmazenar um ponto de clique na lista
-// Desarmazena como uma Pilha (desempilha)
-
-ponto popClique()
-{
-	ponto * pnt;
-	ponto saida;
-	pnt = NULL;
-	if(cliques != NULL)
-	{
-		saida.x = cliques->x;
-		saida.y = cliques->y;
-		pnt = cliques->prox;
-		delete cliques;
-		cliques = pnt;
-		printf("PontoClique: (%d, %d)\n", saida.x, saida.y);
-	}
-	return saida;
-}
-
-// Funcao para armazenar um ponto na lista
-// Armazena como uma Pilha (empilha)
-ponto * pushPonto(int x, int y)
-{
-	ponto * pnt;
-	pnt = new ponto;
-	pnt->x = x;
-	pnt->y = y;
-	pnt->prox = pontos;
-	pontos = pnt;
-	return pnt;
-}
-
-// Funcao para desarmazenar um ponto na lista
-// Desarmazena como uma Pilha (desempilha)
-ponto * popPonto()
-{
-	ponto * pnt;
-	pnt = NULL;
-	if(pontos != NULL)
-	{
-		pnt = pontos->prox;
-		delete pontos;
-		pontos = pnt;
-	}
-	return pnt;
-}
-
-// Declaracoes forward das funcoes utilizadas
+// Funcoes necessarios do GLUT
 void init(void);
 void reshape(int w, int h);
 void display(void);
 void keyboard(unsigned char key, int x, int y);
 void mouse(int button, int state, int x, int y);
 
-// Funcao que implementa o Algoritmo Imediato para rasterizacao de retas
-void retaImediata(double x1, double y1, double x2, double y2);
-
-//Funcao desenha reta
-void bresenham(int x1, int y1, int x2, int y2);
-
-//Funcao desenha quadrilátero
-void quadrilatero(int x1, int y1, int x2, int y2);
-
-//Funcao desenha triangulo
-void triangulo(int x1, int y1, int x2, int y2, int x3, int y3);
-
-//Funcao desenha circunferencia
-void circunferencia( int cx, int cy, int raio);
-
-//Funcao cria menu
-void criaMenu();
-
 // Funcao que percorre a lista de pontos desenhando-os na tela
 void drawPontos();
 
+int lineHight = 15, lineMargin = 5, currentHight = 15;
 
 // Funcao Principal do C
 int main(int argc, char** argv)
 {
-	glutInit(&argc, argv); // Passagens de parametro C para o glut
-	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB); // Selecao do Modo do Display e do Sistema de cor utilizado
-	glutInitWindowSize (width, height);  // Tamanho da janela do OpenGL
-	glutInitWindowPosition (100, 100); //Posicao inicial da janela do OpenGL
-	glutCreateWindow ("Rasterizacao"); // Da nome para uma janela OpenGL
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+	glutInitWindowSize (width, height);
+	glutInitWindowPosition (100, 100);
+	glutCreateWindow ("Editor Grafico");
 
-	init(); // Chama funcao init();
-	glutReshapeFunc(reshape); //funcao callback para redesenhar a tela
-	glutKeyboardFunc(keyboard); //funcao callback do teclado
-	glutMouseFunc(mouse); //funcao callback do mouse
+	glutReshapeFunc(reshape);
+	glutKeyboardFunc(keyboard); // funcao callback do teclado
+	glRasterPos2f(lineMargin, currentHight);
+	glutMouseFunc(mouse); // funcao callback do mouse
+
 	glutDisplayFunc(display); //funcao callback de desenho
-	criaMenu();
+	init(); // Chama funcao init();
 	glutMainLoop(); // executa o loop do OpenGL
 	return 0; // retorna 0 para o tipo inteiro da funcao main();
 }
-
 
 // Funcao com alguns comandos para a inicializacao do OpenGL;
 void init(void)
@@ -174,223 +106,245 @@ void reshape(int w, int h)
 	height = h;
 	glOrtho (0, w, 0, h, -1 , 1);
 
-	// muda para o modo GL_MODELVIEW (n?o pretendemos alterar a projec??o
+	// muda para o modo GL_MODELVIEW (nï¿½o pretendemos alterar a projecï¿½ï¿½o
 	// quando estivermos a desenhar na tela)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	click1 = true; //Para redesenhar os pixels selecionados
+	click2 = true;
+	click3 = true;
+	click4 = true;
+	click5 = true;
 }
 
-// Funcao usada na funcao callback para utilizacao das teclas normais do teclado
+// Callback para utilizacao das teclas do teclado
 void keyboard(unsigned char key, int x, int y)
 {
 	switch (key)   // key - variavel que possui valor ASCII da tecla precionada
 	{
 	case 27: // codigo ASCII da tecla ESC
-		while(popPonto() != NULL);
 		exit(0); // comando pra finalizacao do programa
+		break;
+	case 48: // tecla 0 (desenha reta)
+		menuPictures(0);
+		break;
+	case 49: // tecla 1 (desenha triangulo)
+		menuPictures(2);
+		break;
+	case 50: // tecla 2 (desenha quadrado)
+		menuPictures(1);
+		break;
+	case 51: // tecla 3 (desenha poligono)
+		menuPictures(3);
+		break;
+	case 52: // tecla 4 (desenha circunferencia)
+		menuPictures(4);
+		break;
+	case 53: // tecla 5 (muda para cor preto)
+		menufloodFillColors(0);
+		break;
+	case 54: // tecla 6 (muda para cor vermelho)
+		menufloodFillColors(1);
+		break;
+	case 55: // tecla 7 (muda para cor verde)
+		menufloodFillColors(2);
+		break;
+	case 56: // tecla 8 (muda para cor azul)
+		menufloodFillColors(3);
+		break;
+	case 57: // tecla 9 (ativar flood fill - preenchimento de poligono)
+		menuFloodFill(0);
 		break;
 	}
 }
 
-//Funcao usada na funcao callback para a utilizacao do mouse
+// Callback para a utilizacao dos botoes do mouse
 void mouse(int button, int state, int x, int y)
 {
 	switch (button)
 	{
-	case GLUT_LEFT_BUTTON:
+	case GLUT_LEFT_BUTTON:// Clique com o botao esquerdo identificado
+
 		if (state == GLUT_DOWN)
 		{
-			cliques = pushClique(x, height - y);
-			cliques_cont++;
-			switch (shape)
+			if(click1 && !click2) // quando fizer o primeiro clique
 			{
-				//Reta
-			case 0:
-				if(cliques_cont == 2)
-				{
-					glutPostRedisplay();
-				}
-				break;
-				//Quadrilátero
-			case 1:
-				if(cliques_cont == 2)
-				{
-					glutPostRedisplay();
-				}
-				break;
-				//Triangulo
-			case 2:
-				if(cliques_cont == 3)
-				{
-					glutPostRedisplay();
-				}
-				break;
-				//Poligono
-			case 3:
-				if(cliques_cont == 1)
-				{
-					x_1 = x;
-					y_1 = height - y;
-					x_2 = x;
-					y_2 = height - y;
-					printf("x2y2(%d,%d)\n", x_2, y_2);
-					//glutPostRedisplay();
-				}
-				else if (cliques_cont > 1)
-				{
-					x_1 = x_2;
-					y_1 = y_2;
-					x_2 = x;
-					y_2 = height - y;
-					printf("x1y1(%d,%d)\n", x_1, y_1);
-				}
-
+				click2 = true;
+				pointsArray.push_back(x);
+				x_2 = x;
+				pointsArray.push_back(height - y);
+				y_2 = height - y;
+				printf("x2y2(%d,%d)\n", x, height - y);
 				glutPostRedisplay();
-				break;
-				//Circunferência
-			case 4:
-				if(cliques_cont == 1)
-				{
-					x_1 = x;
-					y_1 = height - y;
-				}
-				else if(cliques_cont == 2)
-				{
-					x_2 = x;
-					y_2 = height - y;
-					glutPostRedisplay();
-				}
-				break;
-
-			default:
-				break;
 			}
+			else if(click1 && click2 && !click3) // quando fizer o segundo clique
+			{
+				click3 = true;
+				pointsArray.push_back(x);
+				pointsArray.push_back(height - y);
+				printf("x3y3(%d,%d)\n", x, height - y);
+				glutPostRedisplay();
+			}
+			else // quando fizer todos os cliques
+			{
+				click1 = true;
+				pointsArray.push_back(x);
+				x_1 = x;
+				pointsArray.push_back(height - y);
+				y_1 = height - y;
+				printf("x1y1(%d,%d)\n", x, height - y);
+				glutPostRedisplay();
+			}
+
 		}
 		break;
-		/*
-		      case GLUT_RIGHT_BUTTON:
-		         if (state == GLUT_DOWN) {
-		            criaMenu();
-		         }
-		         break;
-		*/
-		/*
-		      case GLUT_MIDDLE_BUTTON:
-		         if (state == GLUT_DOWN) {
-		            glutPostRedisplay();
-		         }
-		         break;
-
-		*/
+	case GLUT_RIGHT_BUTTON:// Clique com o botao direito identificado
+		if (state == GLUT_DOWN)
+		{
+			// se houver 3 cliques e for maior que 3 permitir desenho (caso poligono)
+			if(click1 && click2 && click3 && pointsArray.size() > 3 && !click4)
+			{
+				click5 = true;
+				aux = true;
+			}
+			click4 = true;
+			glutPostRedisplay();
+		}
+		break;
 	default:
 		break;
 	}
 }
 
-void mouse_m(int x, int y)
-{
-}
 
 // Funcao usada na funcao callback para desenhar na tela
 void display(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT); //Limpa o Buffer de Cores
-	glColor3f (0.0, 0.0, 0.0); // Seleciona a cor default como preto
-	int i;
-	ponto aux;
-	switch (shape)
+	cor1 = 0, cor2 = 0, cor3 = 0;
+	glColor3f (0.0, 0.0, 0.0); // menu preto
+	glClear(GL_COLOR_BUFFER_BIT); // Limpa o Buffer de Cores
+
+	// barra de menu
+	glBegin(GL_QUADS);
+	glVertex2f(200, 1000);
+	glVertex2f(0, 1000);
+	glVertex2f(0, 0);
+	glVertex2f(200, 0);
+	glEnd();
+
+	glColor3f (1.0, 1.0, 1.0); // quadro branco
+	// quadro de desenho
+	glBegin(GL_QUADS);
+	glVertex2f(2000, 1000);
+	glVertex2f(150, 1000);
+	glVertex2f(150, 0);
+	glVertex2f(2000, 0);
+	glEnd();
+
+	glPointSize(5);
+
+	if(reta && !quadrilatero && !triangulo && !poligono && !circunferencia)  //bresenham e quadrilatero
 	{
-		//Reta
-	case 0:
-		ponto cr[2]; //os três cliques
-		if(cliques_cont == 2)
+		if(click1 && click2)
 		{
-			for(i = 0; i < 2; i++)
-			{
-				cr[i] = popClique();
-				cliques_cont--;
-			}
-			bresenham(cr[0].x, cr[0].y, cr[1].x, cr[1].y);
-			drawPontos();
-		}
-		break;
-		//Quadrilátero
-	case 1:
-		ponto cq[2]; //os três cliques
-		if(cliques_cont == 2)
-		{
-			for(i = 0; i < 2; i++)
-			{
-				cq[i] = popClique();
-				cliques_cont--;
-			}
-			quadrilatero(cq[0].x, cq[0].y, cq[1].x, cq[1].y);
-			drawPontos();
-		}
-		break;
-		//Triangulo
-	case 2:
-		ponto ct[3]; //os três cliques
-		if(cliques_cont == 3)
-		{
-			for(i = 0; i < 3; i++)
-			{
-				ct[i] = popClique();
-				cliques_cont--;
-			}
-			triangulo(ct[0].x, ct[0].y, ct[1].x, ct[1].y, ct[2].x, ct[2].y);
-			drawPontos();
-		}
-		break;
-		//Poligono
-	case 3:
-		if(cliques_cont == 1)
-		{
-			x_0 = x_1;
-			y_0 = y_1;
-		}
-		if(cliques_cont > 1)
-		{
-			if(((x_2 >= x_0 - 4) && (y_2 <= y_0 + 4)) && ((x_2 <= x_0 + 4) && (y_2 >= y_0 - 4)))
-			{
-				x_2 = x_0;
-				y_2 = y_0;
-			}
 			bresenham(x_1, y_1, x_2, y_2);
 			drawPontos();
-			if(x_0 == x_2 && y_0 == y_2)
-			{
-				while(cliques_cont != 0)
-				{
-					aux = popClique();
-					cliques_cont--;
-				}
-				cliques_cont = 0;
-			}
+			click1 = false;
+			click2 = false;
+			click3 = false;
+			pointsArray.clear();// Limpa o vetor de pontos
 		}
-		break;
-		//Circunferência
-	case 4:
-		int raio;
-		if(cliques_cont == 2)
+	}
+	else if(!reta && quadrilatero && !triangulo && !poligono && !circunferencia)  //bresenham e quadrilatero
+	{
+		if(click1 && click2)
 		{
-			printf("X1(%d,%d) X2(%d, %d)\n", x_1, y_1, x_2, y_2);
-			raio = sqrt(pow((x_2 - x_1), 2) + pow((y_2 - y_1), 2));
-			circunferencia(x_1, y_1, raio);
+			drawQuadrilateral(pointsArray);
 			drawPontos();
-			while(cliques_cont != 0)
-			{
-				aux = popClique();
-				cliques_cont--;
-			}
+			click1 = false;
+			click2 = false;
+			click3 = false;
+			pointsArray.clear();//limpa o vetor de pontos
 		}
-		break;
 
-	default:
-		break;
 	}
 
-	glutSwapBuffers(); // manda o OpenGl renderizar as primitivas
+	else if(!reta && !quadrilatero && triangulo && !poligono && !circunferencia)
+	{
+		// identificar sequencia de cliques do triangulo
+		if(click1 && click2 && click3)
+		{
+			drawTriangle(pointsArray);
+			drawPontos();
+			click1 = false;
+			click2 = false;
+			click3 = false;
+			click4 = false;
+			click5 = false;
+			pointsArray.clear();//limpa o vetor de pontos
+
+
+		}
+	}
+	else if(!reta && !quadrilatero && !triangulo && poligono && !circunferencia)
+	{
+		if(click1 && click2 && click3 && click4 && click5)
+		{
+			click1 = false;
+			click2 = false;
+			click3 = false;
+			click4 = false;
+			click5 = false;
+			cont1 = 4;
+			cont2 = 4;
+			drawPolygon(pointsArray);
+			drawPontos();
+			pointsArray.clear();//limpa o vetor de pontos
+
+		}
+
+		if(click1 && click2 && click3 && click4 && !click5)
+		{
+			click4 = false;
+		}
+		if(aux) //cria menu novamente apos o desenho de poligono
+		{
+			aux = false;
+			poligono = false;
+			// menuPressionado = false;
+		}
+	}
+	else if(!reta && !quadrilatero && !triangulo && !poligono && circunferencia)
+	{
+		if(click1)
+		{
+			rasterizeCircumference(x_1, y_1, raio); //especificar raio!
+			drawPontos();
+			click1 = false;
+			click2 = false;
+			pointsArray.clear();//limpa o vetor de pontos
+
+		}
+
+	}
+	else if(floodFill_aux && !reta && !quadrilatero && !triangulo && !poligono && !circunferencia)
+	{
+		if(click1)
+		{
+
+			float bCol[] = {0, 0, 0}; //cor do pixel clicado no caso clicou dentro da figura entï¿½o ï¿½ branco
+
+			glPointSize(2);//tamanho do ponto de pintura
+			floodFill(x_1, y_1, floodFillColor, bCol);
+			click1 = false;
+			click2 = false;
+
+			pointsArray.clear();//limpa o vetor de pontos
+
+		}
+	}
+	glutSwapBuffers();// manda o OpenGl renderizar as primitivas
+
 
 }
 
@@ -402,360 +356,176 @@ void drawPontos()
 	glBegin(GL_POINTS); // Seleciona a primitiva GL_POINTS para desenhar
 	while(pnt != NULL)
 	{
+		glColor3f(0, 0, 0);
 		glVertex2i(pnt->x, pnt->y);
 		pnt = pnt->prox;
 	}
 	glEnd();  // indica o fim do desenho
 }
 
-void bresenham(int x1, int y1, int x2, int y2)
+// Funcao que realiza translacao de uma figura (atividade f))
+void translationElement(double *x, double *y, double tx, double ty)
 {
-	printf("Desenhando resta. Extremos: (%d, %d) e (%d, %d)\n", x1, y1, x2, y2);
-	bool declive, simetrico;
-	int aux;
-	int dx = x2 - x1;
-	int dy = y2 - y1;
-	int dx_ = dx, dy_ = dy, x1_ = x1, x2_ = x2;
-	int x , y;
+	double matriz[3][3] = {
+		{1, 0, 0},
+		{0, 1, 0},
+		{tx, ty, 1}
+	};
+	double k[3] = {*x, *y, 1};
+	double aux = 0, result[3];
+	int i, j;
 
-	//Redução de octante
-	declive = false;
-	simetrico = false;
-	if ((dx * dy) < 0)
+	for (i = 0; i < 3; i++)
 	{
-		y1 = (-1) * y1;
-		y2 = (-1) * y2;
-		dy = (-1) * dy;
-		simetrico = true;
-	}
-	if (abs(dx) < abs(dy))
-	{
-		aux = x1;
-		x1 = y1;
-		y1 = aux;
-
-		aux = x2;
-		x2 = y2;
-		y2 = aux;
-
-		aux = dx;
-		dx = dy;
-		dy = aux;
-
-		declive = true;
-	}
-
-	if(x1 > x2)
-	{
-		aux = x1;
-		x1 = x2;
-		x2 = aux;
-
-		aux = y1;
-		y1 = y2;
-		y2 = aux;
-
-		dx = (-1) * dx;
-		dy = (-1) * dy;
-	}
-
-	x = x1;
-	y = y1;
-	int x_;
-	int y_;
-
-	//Algoritmo de Bresenham
-	int d = (2 * dy) - dx;
-	int incE = 2 * dy;
-	int incNE = 2 * (dy - dx);
-
-	while(x < x2)
-	{
-		//incE
-		if(d <= 0)
+		aux = 0;
+		for(j = 0; j < 3; j++)
 		{
-			d += incE;
+			aux += k[j] * matriz[j][i];
 		}
-		else   //incNE
+		result[i] = aux;
+	}
+
+	*x = result[0];
+	*y = result[1];
+}
+
+// Funcao que realiza translacao de uma escala (atividade f))
+void scaleElement(double *x, double *y, double sx, double sy)
+{
+	double matriz[3][3] = {
+		{sx, 0, 0},
+		{0, sy, 0},
+		{0, 0, 1}
+	};
+	double k[3] = {*x, *y, 1};
+	double aux = 0, result[3];
+	int i, j;
+
+	for (i = 0; i < 3; i++)
+	{
+		aux = 0;
+		for(j = 0; j < 3; j++)
 		{
-			d += incNE;
-			y += 1;
+			aux += k[j] * matriz[j][i];
 		}
-		x += 1;
+		result[i] = aux;
+	}
 
-		//Transformação para o octante original
-		x_ = x;
-		y_ = y;
-		if(declive == true)
+	*x = result[0];
+	*y = result[1];
+}
+
+// Funcao que realiza cisalhamento de uma figura (atividade f))
+void shearElement(double *x, double *y, double C, double direcao) //direcao 1 - eixo x 2- eixo y
+{
+	double matriz[3][3];
+	double k[3] = {*x, *y, 1};
+	double aux = 0, result[3];
+	int i, j;
+
+	if (direcao == 1)
+	{
+		int matriz[3][3] = {
+			{1, 0, 0},
+			{C, 1, 0},
+			{0, 0, 1}
+		};
+	}
+	else if(direcao == 2)
+	{
+		int matriz[3][3] = {
+			{1, C, 0},
+			{0, 1, 0},
+			{0, 0, 1}
+		};
+	}
+	
+	for (i = 0; i < 3; i++)
+	{
+		aux = 0;
+		for(j = 0; j < 3; j++)
 		{
-			x_ = y;
-			y_ = x;
+			aux += k[j] * matriz[j][i];
 		}
+		result[i] = aux;
+	}
+	*x = result[0];
+	*y = result[1];
+}
 
-		if(simetrico == true)
+// Funcao que realiza refrexao de uma figura (atividade f))
+void reflectionElement(double *x, double *y, int direcao) //direcao 1 - eixo x 2- eixo y 3-origem
+{
+	double matriz[3][3];
+	double k[3] = {*x, *y, 1};
+	double aux = 0, result[3];
+	int i, j;
+
+	if (direcao == 1)
+	{
+		double	matriz[3][3] = {
+			{1, 0, 0},
+			{0, -1, 0},
+			{0, 0, 1}
+		};
+	}
+	else if(direcao == 2)
+	{
+		double	matriz[3][3] = {
+			{ -1, 0, 0},
+			{0, 1, 0},
+			{0, 0, 1}
+		};
+	}
+	else if(direcao == 3)
+	{
+		double matriz[3][3] = {
+			{ -1, 0, 0},
+			{0, -1, 0},
+			{0, 0, 1}
+		};
+	}
+
+	for (i = 0; i < 3; i++)
+	{
+		aux = 0;
+		for(j = 0; j < 3; j++)
 		{
-			y_ = (-1) * y_;
+			aux += k[j] * matriz[j][i];
 		}
-		pontos = pushPonto(x_, y_);
+		result[i] = aux;
 	}
+
+	*x = result[0];
+	*y = result[1];
 }
 
-void quadrilatero(int x1, int y1, int x2, int y2)
+// Funcao que realiza rotacao de uma figura (atividade f))
+void rotarionElement(double *x, double *y, double grau)
 {
-	printf("Desenhando quadrilátero. Topo esquerdo: (%d, %d) Base Direita: (%d, %d)\n", x1, y1, x2, y2);
-	bresenham(x1, y1, x2, y1);
-	bresenham(x2, y1, x2, y2);
-	bresenham(x2, y2, x1, y2);
-	bresenham(x1, y2, x1, y1);
-	printf("\n\n");
-}
+	int k[3] = {*x, *y, 1};
+	double cosseno, seno;
+	cosseno = cos( grau * M_PI / 180.0 );
+	seno = sin(grau * M_PI / 180.0);
+	double matriz[3][3] = {
+		{cosseno, seno, 0},
+		{ -seno, cosseno, 0},
+		{0, 0, 1}
+	};
+	int aux = 0, result[3];
+	int i, j;
 
-void triangulo(int x1, int y1, int x2, int y2, int x3, int y3)
-{
-	printf("Desenhando quadrilátero. Extremos: (%d, %d), (%d, %d) e (%d, %d)\n", x1, y1, x2, y2, x3, y3);
-	bresenham(x1, y1, x2, y2);
-	bresenham(x2, y2, x3, y3);
-	bresenham(x3, y3, x1, y1);
-}
-
-void circunferencia(int cx, int cy, int raio)
-{
-	printf("Desenhando Circunferência. Raio: %d, Centroide: (%d, %d)\n", raio, cx, cy);
-	int d = 1 - raio;
-	int de = 3;
-	int dse = (-2 * raio) + 5;
-	int x = 0, y = raio;
-	pontos = pushPonto(0 + cx, raio + cy);
-	pontos = pushPonto(0 + cx, -raio  + cy);
-	pontos = pushPonto(raio + cx, 0  + cy);
-	pontos = pushPonto(-raio + cx, 0 + cy);
-	while(y > x)
+	for (i = 0; i < 3; i++)
 	{
-		if( d < 0)
+		aux = 0;
+		for(j = 0; j < 3; j++)
 		{
-			d += de;
-			de += 2;
-			dse += 2;
+			aux += k[j] * matriz[j][i];
 		}
-		else
-		{
-			d += dse;
-			de += 2;
-			dse += 4;
-			y--;
-		}
-		x++;
-		pontos = pushPonto(x + cx, y + cy);
-		pontos = pushPonto(-x + cx, y + cy);
-		pontos = pushPonto(x + cx, -y + cy);
-		pontos = pushPonto(-x + cx, -y + cy);
-		pontos = pushPonto(y + cx, x + cy);
-		pontos = pushPonto(-y + cx, x + cy);
-		pontos = pushPonto(y + cx, -x + cy);
-		pontos = pushPonto(-y + cx, -x + cy);
+		result[i] = aux;
 	}
 
+	*x = result[0];
+	*y = result[1];
+
 }
-//Pontos, unidades em x e y
-void translacao(ponto * pontos, int tx, int ty)
-{
-	ponto * aux = pontos;//Interpreta os pontos
-	while(aux != NULL)
-	{
-		aux->x = aux->x + tx;
-		aux->y = aux->y + ty;
-		aux = pontos->prox;
-	}
-}
-
-void escala(ponto * pontos , double sx, double sy)
-{
-	ponto * aux = pontos;//Interpreta os pontos
-	while(aux != NULL)
-	{
-		aux->x = aux->x * sx;
-		aux->y = aux->y * sy;
-		aux = pontos->prox;
-	}
-}
-void cisalhamento(ponto * pontos, int cx = 0, int cy = 0)
-{
-	ponto * aux = pontos;//Interpreta os pontos
-	while(aux != NULL)
-	{
-		aux->x = aux->x + (cx * aux->y);
-		aux->y = (aux->x * cy) + aux->y;
-		aux = pontos->prox;
-	}
-}
-void reflexao(ponto * pontos, bool x, bool y)
-{
-	ponto * aux = pontos;//Interpreta os pontos
-	while(aux != NULL)
-	{
-		if(x == true)
-			aux->x = 0 - aux->x;
-		if(y == true)
-			aux->y = 0 - aux->y;
-		aux = pontos->prox;
-	}
-}
-void rotacao(ponto * pontos, double angulo)
-{
-	ponto * aux = pontos;//Interpreta os pontos
-	while(aux != NULL)
-	{
-		aux->x = (aux->x * cos(angulo)) - (aux->y * sin(angulo));
-		aux->y = (aux->x * sin(angulo)) + (aux->y * cos(angulo));
-		aux = pontos->prox;
-	}
-}
-
-void menuQuad(int op)
-{
-	switch (op)
-	{
-	case 0:
-		shape = 1;
-		preenchido = false;
-		break;
-	case 1:
-		shape = 1;
-		preenchido = true;
-		break;
-
-	default:
-		break;
-	}
-}
-
-void menuTri(int op)
-{
-	switch (op)
-	{
-	case 0:
-		shape = 2;
-		preenchido = false;
-		break;
-	case 1:
-		shape = 2;
-		preenchido = true;
-		break;
-
-	default:
-		break;
-	}
-}
-
-void menuPoli(int op)
-{
-	switch (op)
-	{
-	case 0:
-		shape = 3;
-		preenchido = false;
-		break;
-	case 1:
-		shape = 3;
-		preenchido = true;
-		break;
-
-	default:
-		break;
-	}
-}
-
-void menuCir(int op)
-{
-	switch (op)
-	{
-	case 0:
-		shape = 4;
-		preenchido = false;
-		break;
-	case 1:
-		shape = 4;
-		preenchido = true;
-		break;
-
-	default:
-		break;
-	}
-}
-
-void menuTrans(int op)
-{
-	switch (op)
-	{
-	case 0:
-		//translacao
-		break;
-	case 1:
-		/* escala */
-		break;
-	case 2:
-		/* cisalhamento */
-		break;
-	case 3:
-		/* reflexao */
-		break;
-	case 4:
-		/* rotacao */
-		break;
-	default:
-		break;
-	}
-}
-
-void menuPrincipal(int op)
-{
-	switch (op)
-	{
-	case 0:
-		shape = 0;
-		break;
-
-	default:
-		break;
-	}
-}
-
-
-void criaMenu()
-{
-	int menu, submenu1, submenu2, submenu3, submenu4, submenu5;
-	printf("Criando Menu\n");
-	submenu1 = glutCreateMenu(menuQuad);
-	glutAddMenuEntry("Não preenchida", 0);
-	glutAddMenuEntry("Preenchida", 1);
-
-	submenu2 = glutCreateMenu(menuTri);
-	glutAddMenuEntry("Não preenchida", 0);
-	glutAddMenuEntry("Preenchida", 1);
-
-	submenu3 = glutCreateMenu(menuPoli);
-	glutAddMenuEntry("Não preenchida", 0);
-	glutAddMenuEntry("Preenchida", 1);
-
-	submenu4 = glutCreateMenu(menuCir);
-	glutAddMenuEntry("Não preenchida", 0);
-	glutAddMenuEntry("Preenchida", 1);
-
-	submenu5 = glutCreateMenu(menuTrans);
-	glutAddMenuEntry("Translação", 0);
-	glutAddMenuEntry("Escala", 1);
-	glutAddMenuEntry("Cisalhamento", 2);
-	glutAddMenuEntry("Reflexão", 3);
-	glutAddMenuEntry("Rotação", 4);
-
-	menu = glutCreateMenu(menuPrincipal);
-	glutAddMenuEntry("Reta", 0);
-	glutAddSubMenu("Quadrilátero", submenu1);
-	glutAddSubMenu("Triângulo", submenu2);
-	glutAddSubMenu("Polígono", submenu3);
-	glutAddSubMenu("Circunferência", submenu4);
-	glutAddSubMenu("Transformação", submenu5);
-
-	glutAttachMenu(GLUT_RIGHT_BUTTON);
-}
-
